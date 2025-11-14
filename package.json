@@ -8,7 +8,12 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "test": "jest",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "build:android": "cd android && ./gradlew assembleRelease",
+    "build:android:debug": "cd android && ./gradlew assembleDebug",
+    "build:ios": "cd ios && xcodebuild -workspace ManagementGL.xcworkspace -scheme ManagementGL -configuration Release archive",
+    "init:android": "npx react-native init ManagementGL --skip-install && npm install",
+    "init:ios": "cd ios && pod install"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -57,6 +62,18 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ho1010/MGL.git"
+  },
+  "keywords": [
+    "react-native",
+    "diabetes",
+    "gl",
+    "glycemic-load",
+    "health",
+    "mobile-app"
+  ]
 }
 

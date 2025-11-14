@@ -109,14 +109,32 @@ Management-GL/
    SUPABASE_ANON_KEY=your-supabase-key
    ```
 
-4. **앱 실행**
+4. **모바일 앱 빌드**
+
+   **Android 프로젝트 초기화** (Android 폴더가 없는 경우):
    ```bash
-   # Android
+   npx react-native init ManagementGL --template react-native-template-typescript
+   ```
+
+   **Android 앱 빌드:**
+   ```bash
+   # 개발 빌드
    npm run android
    
-   # iOS
+   # Release APK 빌드
+   npm run build:android
+   ```
+
+   **iOS 앱 빌드** (macOS만):
+   ```bash
+   # iOS 의존성 설치
+   cd ios && pod install && cd ..
+   
+   # 개발 빌드
    npm run ios
    ```
+
+   📖 상세한 빌드 가이드는 [BUILD_GUIDE.md](./BUILD_GUIDE.md) 또는 [MOBILE_APP_SETUP.md](./MOBILE_APP_SETUP.md)를 참조하세요.
 
 ## 🔧 설정
 
@@ -177,6 +195,30 @@ GL = (GI × 탄수화물(g)) / 100
 
 GitHub Pages에서 프로젝트 소개 페이지를 확인할 수 있습니다:
 👉 [https://ho1010.github.io/MGL/](https://ho1010.github.io/MGL/)
+
+## 📱 모바일 앱 빌드
+
+### 빠른 시작
+
+1. **Android 앱 빌드:**
+   ```bash
+   # Android 프로젝트가 없는 경우
+   npx react-native init ManagementGL --template react-native-template-typescript
+   
+   # APK 빌드
+   npm run build:android
+   ```
+
+2. **iOS 앱 빌드** (macOS만):
+   ```bash
+   cd ios && pod install && cd ..
+   npm run ios
+   ```
+
+### 상세 가이드
+
+- 📖 [빌드 가이드](./BUILD_GUIDE.md) - Android/iOS 앱 빌드 상세 가이드
+- 📖 [모바일 앱 설정](./MOBILE_APP_SETUP.md) - 프로젝트 초기화 및 설정
 
 ## 📝 TODO
 
