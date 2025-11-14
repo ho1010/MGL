@@ -1,0 +1,43 @@
+{
+  "name": "Management GL - 당뇨 관리",
+  "short_name": "Management GL",
+  "description": "음식 사진을 찍으면 혈당부하지수(GL)를 자동으로 분석하여 표시하는 당뇨 관리 앱",
+  "start_url": "/MGL/",
+  "display": "standalone",
+  "background_color": "#F5F5F5",
+  "theme_color": "#4A90E2",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "음식 촬영",
+      "short_name": "촬영",
+      "description": "음식 사진을 찍어 GL 확인",
+      "url": "/MGL/?action=camera",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "음식 검색",
+      "short_name": "검색",
+      "description": "음식명으로 GL 정보 검색",
+      "url": "/MGL/?action=search",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+
