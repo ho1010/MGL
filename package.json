@@ -35,7 +35,8 @@
     "react-native-svg": "^13.14.0",
     "@react-native-picker/picker": "^2.4.10",
     "react-native-push-notification": "^8.1.1",
-    "@react-native-community/push-notification-ios": "^1.11.0"
+    "@react-native-community/push-notification-ios": "^1.11.0",
+    "@react-native-community/netinfo": "^11.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.23.5",

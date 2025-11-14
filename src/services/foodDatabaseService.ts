@@ -3,6 +3,7 @@ import {FoodItem, ApiResponse, DetectedFood} from '../types';
 import {API_ENDPOINTS} from '../constants';
 import {config} from '../../config/api';
 import {calculateGLForServing, getGLClassification} from '../utils/glCalculator';
+import {handleError, handleFoodNotFoundError} from '../utils/errorHandler';
 
 /**
  * 음식 데이터베이스 서비스
@@ -37,9 +38,10 @@ class FoodDatabaseService {
         data: response.data,
       };
     } catch (error: any) {
+      const appError = handleError(error, 'FoodSearch');
       return {
         success: false,
-        error: error.message || '음식 검색 중 오류가 발생했습니다.',
+        error: appError.message,
       };
     }
   }
@@ -87,14 +89,20 @@ class FoodDatabaseService {
       }
 
       // 검색 결과가 없으면 빈 배열 반환
+      if (allResults.length === 0) {
+        // 에러는 발생하지 않지만, 사용자에게 알림을 위해 로깅
+        console.warn(`음식을 찾을 수 없습니다: ${foodName}`);
+      }
+
       return {
         success: true,
-        data: [],
+        data: allResults.length > 0 ? sortedResults : [],
       };
     } catch (error: any) {
+      const appError = handleError(error, 'FoodNutritionInfo');
       return {
         success: false,
-        error: error.message || '영양 정보 조회 중 오류가 발생했습니다.',
+        error: appError.message,
       };
     }
   }

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import {DetectedFood, ApiResponse} from '../types';
 import {config} from '../../config/api';
+import {handleError, handleAIRecognitionError, handleTimeoutError} from '../utils/errorHandler';
 
 /**
  * OpenAI Vision API 서비스
@@ -101,22 +102,20 @@ class OpenAIVisionService {
     } catch (error: any) {
       console.error('OpenAI Vision API 오류:', error);
       
-      let errorMessage = '이미지 분석 중 오류가 발생했습니다.';
-      if (error.response) {
-        if (error.response.status === 401) {
-          errorMessage = 'API 키가 유효하지 않습니다.';
-        } else if (error.response.status === 429) {
-          errorMessage = 'API 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.';
-        } else {
-          errorMessage = error.response.data?.error?.message || errorMessage;
-        }
-      } else if (error.request) {
-        errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+      // 타임아웃 오류 처리
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        const timeoutError = handleTimeoutError(error);
+        return {
+          success: false,
+          error: timeoutError.message,
+        };
       }
 
+      // AI 인식 오류 처리
+      const appError = handleAIRecognitionError(error);
       return {
         success: false,
-        error: errorMessage,
+        error: appError.message,
       };
     }
   }
