@@ -196,29 +196,55 @@ GL = (GI × 탄수화물(g)) / 100
 GitHub Pages에서 프로젝트 소개 페이지를 확인할 수 있습니다:
 👉 [https://ho1010.github.io/MGL/](https://ho1010.github.io/MGL/)
 
-## 📱 모바일 앱 빌드
+## 📱 모바일 앱 배포
 
-### 빠른 시작
+### ⚡ 빠른 시작 (3단계)
 
-1. **Android 앱 빌드:**
-   ```bash
-   # Android 프로젝트가 없는 경우
-   npx react-native init ManagementGL --template react-native-template-typescript
-   
-   # APK 빌드
-   npm run build:android
+1. **환경 설정:**
+   ```powershell
+   .\scripts\setup-android-env.ps1
    ```
 
-2. **iOS 앱 빌드** (macOS만):
-   ```bash
-   cd ios && pod install && cd ..
-   npm run ios
+2. **프로젝트 초기화:**
+   ```powershell
+   .\scripts\init-android.ps1
+   npm install
    ```
 
-### 상세 가이드
+3. **빌드 및 테스트:**
+   ```powershell
+   .\scripts\build-android.ps1 -BuildType debug
+   ```
 
-- 📖 [빌드 가이드](./BUILD_GUIDE.md) - Android/iOS 앱 빌드 상세 가이드
+### 📦 Release 빌드 (배포용)
+
+```powershell
+# 서명 키 생성 (최초 1회)
+.\scripts\generate-keystore.ps1
+
+# Release APK 빌드
+.\scripts\build-android.ps1 -BuildType release
+
+# AAB 빌드 (Google Play Store용)
+cd android
+.\gradlew.bat bundleRelease
+```
+
+### 📚 배포 가이드
+
+- ⭐ **[시작하기.md](./시작하기.md)** - 가장 빠른 시작 가이드
+- 🚀 **[빠른_배포_가이드.md](./빠른_배포_가이드.md)** - 빠른 배포 프로세스
+- 📖 **[모바일_배포_완료_가이드.md](./모바일_배포_완료_가이드.md)** - 전체 배포 프로세스
+- 📋 **[배포_체크리스트.md](./배포_체크리스트.md)** - 배포 전 확인사항
+- 🎨 **[APP_ICON_GUIDE.md](./APP_ICON_GUIDE.md)** - 앱 아이콘 설정
+- 📖 [빌드 가이드](./BUILD_GUIDE.md) - 상세 빌드 가이드
 - 📖 [모바일 앱 설정](./MOBILE_APP_SETUP.md) - 프로젝트 초기화 및 설정
+
+### 📂 빌드 파일 위치
+
+- **Debug APK**: `android\app\build\outputs\apk\debug\app-debug.apk`
+- **Release APK**: `android\app\build\outputs\apk\release\app-release.apk`
+- **AAB**: `android\app\build\outputs\bundle\release\app-release.aab`
 
 ## 📝 TODO
 

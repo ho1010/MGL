@@ -62,3 +62,12 @@ yarn-error.log
 # GitHub Pages
 # index.html은 포함해야 함
 
+# Build outputs
+builds/
+*.apk
+*.aab
+
+# Android signing keys
+*release-key.keystore
+my-release-key.keystore
+
