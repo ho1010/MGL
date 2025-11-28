@@ -43,7 +43,7 @@ const GLProgressBar: React.FC<GLProgressBarProps> = ({
   const progressColor = getProgressColor();
   const backgroundColor = isOverTarget
     ? theme.colors.SURFACE_VARIANT
-    : theme.colors.BACKGROUND;
+    : '#F5F5F5'; // 더 밝은 회색 배경
 
   const widthInterpolate = progressAnim.interpolate({
     inputRange: [0, 100],
@@ -77,7 +77,7 @@ const GLProgressBar: React.FC<GLProgressBarProps> = ({
       <View
         style={[
           styles.progressBarContainer,
-          {height, backgroundColor, borderColor: theme.colors.DIVIDER},
+          {height, backgroundColor},
           isOverTarget && {
             borderWidth: 2,
             borderColor: theme.colors.DANGER,
@@ -142,13 +142,12 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: 4,
     overflow: 'hidden',
     position: 'relative',
-    borderWidth: 1,
   },
   progressBar: {
-    borderRadius: 16,
+    borderRadius: 4,
     height: '100%',
   },
   targetMarker: {

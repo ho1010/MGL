@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo} from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  SafeAreaView,
+  Platform,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -17,22 +19,11 @@ import {loadDailyStats, loadAllMealRecords} from '../store/slices/mealSlice';
 import {userSettingsService} from '../services/userSettingsService';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import GLProgressBar from '../components/GLProgressBar';
-import DonutChart from '../components/DonutChart';
-import {MealType, MEAL_TYPE_LABELS} from '../types';
-import {GL_COLOR_MAP} from '../constants';
 import {GLSafetyLevel} from '../constants';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
-
-// 카테고리별 색상 매핑
-const CATEGORY_COLORS: {[key: string]: string} = {
-  아침: '#FF6B6B',
-  점심: '#4ECDC4',
-  저녁: '#45B7D1',
-  간식: '#FFA07A',
-};
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -43,22 +34,13 @@ const HomeScreen = () => {
   const dailyStats = useSelector((state: RootState) => state.meal.dailyStats);
   const mealRecords = useSelector((state: RootState) => state.meal.records);
   const [dailyGLTarget, setDailyGLTarget] = React.useState(80);
-  const [userName, setUserName] = React.useState('사용자');
 
   // 오늘 날짜
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
-  // 이 달의 남은 일수 계산
-  const daysLeftInMonth = useMemo(() => {
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    return lastDay.getDate() - today.getDate();
-  }, []);
 
   // 사용자 정보 및 설정 로드
   useEffect(() => {
     if (user) {
-      setUserName(user.name || '사용자');
       userSettingsService
         .getUserSettings(user.id)
         .then((settings) => {
@@ -78,492 +60,386 @@ const HomeScreen = () => {
 
   // 오늘의 GL 값
   const currentGL = dailyStats?.totalGL || 0;
-  const remainingGL = Math.max(0, dailyGLTarget - currentGL);
+  const recordCount = mealRecords.length;
   const usedPercentage = dailyGLTarget > 0 ? (currentGL / dailyGLTarget) * 100 : 0;
-
-  // 카테고리별 GL 분포 계산 (식사 타입별)
-  const categoryData = useMemo(() => {
-    if (!dailyStats || !dailyStats.meals) return [];
-
-    const categoryMap: {[key: string]: number} = {};
-    dailyStats.meals.forEach((meal) => {
-      const category = MEAL_TYPE_LABELS[meal.mealType];
-      categoryMap[category] = (categoryMap[category] || 0) + meal.totalGL;
-    });
-
-    const total = Object.values(categoryMap).reduce((sum, val) => sum + val, 0);
-    if (total === 0) return [];
-
-    return Object.entries(categoryMap)
-      .map(([label, value]) => ({
-        label,
-        value: Math.round(value),
-        color: CATEGORY_COLORS[label] || theme.colors.PRIMARY,
-        percentage: Math.round((value / total) * 100),
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [dailyStats, theme.colors.PRIMARY]);
-
-  // 최근 식사 기록 (최대 5개)
-  const recentMeals = useMemo(() => {
-    return mealRecords
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 5);
-  }, [mealRecords]);
-
-  // 식사 타입 아이콘
-  const getMealIcon = (mealType: MealType) => {
-    switch (mealType) {
-      case 'breakfast':
-        return 'breakfast-dining';
-      case 'lunch':
-        return 'lunch-dining';
-      case 'dinner':
-        return 'dinner-dining';
-      case 'snack':
-        return 'restaurant-menu';
-      default:
-        return 'restaurant';
-    }
-  };
-
-  // 시간 포맷팅 (오늘, 어제, 날짜)
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return '오늘';
-    if (diffDays === 1) return '어제';
-    if (diffDays < 7)
-      return `${diffDays}일 전`;
-    return date.toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'});
-  };
-
-  // 시간 포맷팅
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
-  };
+  const isGoalAchieved = currentGL <= dailyGLTarget;
 
   return (
-    <View
-      style={[
-        styles.container,
-        {backgroundColor: theme.colors.BACKGROUND},
-      ]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
-        {/* 헤더 - 인사말 */}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* 상단 헤더 */}
         <View style={styles.header}>
-          <Text style={[styles.greeting, {color: theme.colors.TEXT_PRIMARY}]}>
-            안녕하세요, {userName}님!
-          </Text>
-          <Text
-            style={[
-              styles.subtitle,
-              {color: theme.colors.TEXT_SECONDARY},
-            ]}>
-            혈당 관리를 현명하게
-          </Text>
+          <Text style={styles.headerTitle}>당뇨 관리</Text>
+          <Text style={styles.headerSubtitle}>혈당부하지수로 건강 관리</Text>
         </View>
 
-        {/* 오늘의 총 GL 카드 */}
-        <View
-          style={[
-            styles.glCard,
-            {
-              backgroundColor: theme.colors.SURFACE,
-              ...theme.shadows.lg,
-            },
-          ]}>
-          <Text
-            style={[styles.glCardLabel, {color: theme.colors.TEXT_SECONDARY}]}>
-            오늘의 총 GL
-          </Text>
-          <View style={styles.glValueContainer}>
-            <Text
-              style={[
-                styles.glValue,
-                {color: theme.colors.TEXT_PRIMARY},
-              ]}>
-              {currentGL.toFixed(0)}
-            </Text>
-            <Text
-              style={[
-                styles.glTarget,
-                {color: theme.colors.TEXT_SECONDARY},
-              ]}>
-              / {dailyGLTarget}
-            </Text>
-          </View>
-          <View style={styles.glInfoRow}>
-            <Text
-              style={[
-                styles.remainingText,
-                {
-                  color:
-                    remainingGL > 0
-                      ? theme.colors.SAFE
-                      : theme.colors.DANGER,
-                },
-              ]}>
-              {remainingGL > 0
-                ? `${remainingGL.toFixed(0)} 남음`
-                : `${Math.abs(remainingGL).toFixed(0)} 초과`}
-            </Text>
-            <Text
-              style={[
-                styles.daysLeftText,
-                {color: theme.colors.TEXT_SECONDARY},
-              ]}>
-              {daysLeftInMonth}일 남음
-            </Text>
-          </View>
-
-          {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <GLProgressBar
-              currentGL={currentGL}
-              targetGL={dailyGLTarget}
-              height={12}
-              showLabel={false}
-            />
-            <View style={styles.progressInfo}>
-              <Text
-                style={[
-                  styles.progressPercentage,
-                  {
-                    color:
-                      usedPercentage > 100
-                        ? theme.colors.DANGER
-                        : theme.colors.TEXT_SECONDARY,
-                  },
-                ]}>
-                {Math.min(usedPercentage, 100).toFixed(1)}% 사용
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* 식사별 GL 분포 */}
-        {categoryData.length > 0 && (
-          <View
-            style={[
-              styles.section,
-              {
-                backgroundColor: theme.colors.SURFACE,
-                ...theme.shadows.md,
-              },
-            ]}>
-            <View style={styles.sectionHeader}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  {color: theme.colors.TEXT_PRIMARY},
-                ]}>
-                식사별 GL 분포
-              </Text>
-              <Text
-                style={[
-                  styles.sectionSubtitle,
-                  {color: theme.colors.TEXT_SECONDARY},
-                ]}>
-                {today.toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: 'long',
-                })}
-              </Text>
-            </View>
-            <DonutChart data={categoryData} total={currentGL} />
-          </View>
-        )}
-
-        {/* 최근 식사 기록 */}
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: theme.colors.SURFACE,
-              ...theme.shadows.md,
-            },
-          ]}>
-          <View style={styles.sectionHeader}>
-            <Text
-              style={[
-                styles.sectionTitle,
-                {color: theme.colors.TEXT_PRIMARY},
-              ]}>
-              최근 식사
-            </Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('History')}>
-              <Text
-                style={[
-                  styles.viewAllText,
-                  {color: theme.colors.PRIMARY},
-                ]}>
-                전체보기
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {recentMeals.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Icon
-                name="restaurant"
-                size={48}
-                color={theme.colors.TEXT_SECONDARY}
-              />
-              <Text
-                style={[
-                  styles.emptyText,
-                  {color: theme.colors.TEXT_SECONDARY},
-                ]}>
-                아직 식사 기록이 없습니다
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.addButton,
-                  {backgroundColor: theme.colors.PRIMARY},
-                ]}
-                onPress={() => navigation.navigate('Camera')}>
-                <Icon name="add" size={20} color={theme.colors.WHITE} />
-                <Text
-                  style={[styles.addButtonText, {color: theme.colors.WHITE}]}>
-                  식사 추가
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.mealsList}>
-              {recentMeals.map((meal) => (
-                <TouchableOpacity
-                  key={meal.id}
-                  style={[
-                    styles.mealItem,
-                    {
-                      backgroundColor: theme.colors.BACKGROUND,
-                      borderColor: theme.colors.DIVIDER,
-                    },
-                  ]}
-                  onPress={() => {
-                    // 식사 상세 보기로 이동 (필요시 구현)
-                  }}>
-                  <View style={styles.mealItemLeft}>
-                    <View
-                      style={[
-                        styles.mealIconContainer,
-                        {
-                          backgroundColor: CATEGORY_COLORS[
-                            MEAL_TYPE_LABELS[meal.mealType]
-                          ] || theme.colors.PRIMARY,
-                        },
-                      ]}>
-                      <Icon
-                        name={getMealIcon(meal.mealType)}
-                        size={20}
-                        color={theme.colors.WHITE}
-                      />
-                    </View>
-                    <View style={styles.mealItemInfo}>
-                      <Text
-                        style={[
-                          styles.mealName,
-                          {color: theme.colors.TEXT_PRIMARY},
-                        ]}>
-                        {meal.foods.length > 0
-                          ? meal.foods[0].nameKo || meal.foods[0].nameEn
-                          : MEAL_TYPE_LABELS[meal.mealType]}
-                        {meal.foods.length > 1 &&
-                          ` 외 ${meal.foods.length - 1}개`}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.mealCategory,
-                          {color: theme.colors.TEXT_SECONDARY},
-                        ]}>
-                        {MEAL_TYPE_LABELS[meal.mealType]} • {formatDate(meal.timestamp)} •{' '}
-                        {formatTime(meal.timestamp)}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text
-                    style={[
-                      styles.mealGL,
-                      {
-                        color:
-                          meal.totalGL > 20
-                            ? theme.colors.DANGER
-                            : meal.totalGL > 10
-                            ? theme.colors.WARNING
-                            : theme.colors.SAFE,
-                      },
-                    ]}>
-                    -{meal.totalGL.toFixed(1)}
-                  </Text>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          {/* 오늘의 총 GL 카드 */}
+          <View style={styles.glCard}>
+            <View style={styles.glCardHeader}>
+              <Text style={styles.glCardLabel}>오늘의 총 GL</Text>
+              {isGoalAchieved && (
+                <TouchableOpacity style={styles.goalAchievedButton}>
+                  <Icon name="check" size={16} color="#FFFFFF" />
+                  <Text style={styles.goalAchievedText}>목표 달성</Text>
                 </TouchableOpacity>
-              ))}
+              )}
             </View>
-          )}
-        </View>
-      </ScrollView>
-    </View>
+            <Text style={styles.glValue}>{currentGL.toFixed(1)}</Text>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarWrapper}>
+                <GLProgressBar
+                  currentGL={currentGL}
+                  targetGL={dailyGLTarget}
+                  height={6}
+                  showLabel={false}
+                />
+              </View>
+              <View style={styles.progressInfo}>
+                <Text style={styles.recommendedText}>권장: {dailyGLTarget} 이하</Text>
+                <Text style={styles.recordCountText}>{recordCount}개 기록</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 음식 분석 프롬프트 카드 */}
+          <TouchableOpacity
+            style={styles.analysisCard}
+            onPress={() => navigation.navigate('Camera')}>
+            <View style={styles.analysisIconContainer}>
+              <Icon name="trending-up" size={56} color="#4A90E2" />
+            </View>
+            <Text style={styles.analysisTitle}>음식을 분석해보세요</Text>
+            <Text style={styles.analysisDescription}>
+              섭취할 음식의 사진을 촬영하여 혈당부하지수를 확인하세요
+            </Text>
+          </TouchableOpacity>
+
+          {/* GL 기준 섹션 */}
+          <View style={styles.criteriaCard}>
+            <Text style={styles.criteriaTitle}>혈당부하지수(GL) 기준</Text>
+            <View style={styles.criteriaList}>
+              {/* 안전 */}
+              <View style={[styles.criteriaItem, styles.safeItem]}>
+                <View style={[styles.criteriaIconContainer, styles.safeIconContainer]}>
+                  <Icon name="check-circle" size={28} color="#4CAF50" />
+                </View>
+                <View style={styles.criteriaContent}>
+                  <Text style={[styles.criteriaLabel, styles.safeLabel]}>
+                    안전 (저혈당부하)
+                  </Text>
+                  <Text style={styles.criteriaDescription}>
+                    GL 10 이하 - 안심하고 섭취 가능
+                  </Text>
+                </View>
+              </View>
+
+              {/* 위험 */}
+              <View style={[styles.criteriaItem, styles.warningItem]}>
+                <View style={[styles.criteriaIconContainer, styles.warningIconContainer]}>
+                  <Icon name="warning" size={28} color="#FFC107" />
+                </View>
+                <View style={styles.criteriaContent}>
+                  <Text style={[styles.criteriaLabel, styles.warningLabel]}>
+                    위험 (중혈당부하)
+                  </Text>
+                  <Text style={styles.criteriaDescription}>
+                    GL 11-19 - 섭취량 조절 필요
+                  </Text>
+                </View>
+              </View>
+
+              {/* 매우 위험 */}
+              <View style={[styles.criteriaItem, styles.dangerItem]}>
+                <View style={[styles.criteriaIconContainer, styles.dangerIconContainer]}>
+                  <Icon name="close-circle" size={28} color="#F44336" />
+                </View>
+                <View style={styles.criteriaContent}>
+                  <Text style={[styles.criteriaLabel, styles.dangerLabel]}>
+                    매우 위험 (고혈당부하)
+                  </Text>
+                  <Text style={styles.criteriaDescription}>
+                    GL 20 이상 - 주의 깊게 섭취
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* 하단 액션 바 */}
+        <TouchableOpacity
+          style={styles.bottomActionBar}
+          onPress={() => navigation.navigate('Camera')}
+          activeOpacity={0.8}>
+          <Icon name="camera-alt" size={24} color="#FFFFFF" />
+          <Text style={styles.bottomActionText}>음식 사진 촬영하기</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#4A90E2',
+  },
   container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  header: {
+    backgroundColor: '#4A90E2',
+    paddingTop: Platform.OS === 'ios' ? 20 : 16,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 6,
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    color: '#FFFFFF',
+    opacity: 0.95,
+    fontWeight: '400',
+  },
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginTop: 20,
-    marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
+    paddingBottom: 120,
   },
   glCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  glCardLabel: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  glValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 12,
-  },
-  glValue: {
-    fontSize: 42,
-    fontWeight: 'bold',
-  },
-  glTarget: {
-    fontSize: 24,
-    marginLeft: 4,
-  },
-  glInfoRow: {
+  glCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  remainingText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  daysLeftText: {
+  glCardLabel: {
     fontSize: 14,
+    color: '#757575',
+  },
+  goalAchievedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  goalAchievedText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  glValue: {
+    fontSize: 56,
+    fontWeight: 'bold',
+    color: '#212121',
+    marginBottom: 20,
   },
   progressContainer: {
     marginTop: 4,
   },
+  progressBarWrapper: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
   progressInfo: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 8,
   },
-  progressPercentage: {
-    fontSize: 12,
+  recommendedText: {
+    fontSize: 13,
+    color: '#757575',
     fontWeight: '500',
   },
-  section: {
+  recordCountText: {
+    fontSize: 13,
+    color: '#757575',
+    fontWeight: '500',
+  },
+  analysisCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 20,
+    padding: 40,
     marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  sectionTitle: {
+  analysisIconContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  analysisTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#212121',
+    marginBottom: 12,
+  },
+  analysisDescription: {
+    fontSize: 14,
+    color: '#757575',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
+  },
+  criteriaCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  criteriaTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#212121',
+    marginBottom: 20,
   },
-  sectionSubtitle: {
-    fontSize: 14,
+  criteriaList: {
+    gap: 0,
   },
-  viewAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  addButton: {
+  criteriaItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  mealsList: {
-    gap: 12,
-  },
-  mealItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+    padding: 18,
     borderRadius: 16,
-    borderWidth: 1,
+    gap: 14,
+    marginBottom: 4,
   },
-  mealItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
+  safeItem: {
+    backgroundColor: '#E8F5E9',
   },
-  mealIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  warningItem: {
+    backgroundColor: '#FFF9C4',
+  },
+  dangerItem: {
+    backgroundColor: '#FFEBEE',
+  },
+  criteriaIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mealItemInfo: {
+  safeIconContainer: {
+    backgroundColor: '#C8E6C9',
+  },
+  warningIconContainer: {
+    backgroundColor: '#FFF59D',
+  },
+  dangerIconContainer: {
+    backgroundColor: '#FFCDD2',
+  },
+  criteriaContent: {
     flex: 1,
   },
-  mealName: {
+  criteriaLabel: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
-  mealCategory: {
-    fontSize: 13,
+  safeLabel: {
+    color: '#2E7D32',
   },
-  mealGL: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  warningLabel: {
+    color: '#F57C00',
+  },
+  dangerLabel: {
+    color: '#C62828',
+  },
+  criteriaDescription: {
+    fontSize: 13,
+    color: '#757575',
+    lineHeight: 18,
+  },
+  bottomActionBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#4A90E2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 38 : 18,
+    gap: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: -2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  bottomActionText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 });
 
