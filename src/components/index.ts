@@ -19,3 +19,4 @@ export {default as NotificationSettings} from './NotificationSettings';
 export {default as AnimatedGLValue} from './AnimatedGLValue';
 export {default as ColorTransitionView} from './ColorTransitionView';
 export {default as ThemeToggle} from './ThemeToggle';
+export {default as DonutChart} from './DonutChart';
